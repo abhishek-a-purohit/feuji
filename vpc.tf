@@ -16,21 +16,16 @@ resource "aws_vpc" "main" {
 # =========================
 # Create your subnets here
 # =========================
-module "subnets" {
-  source  = "hashicorp/subnets/cidr"
-  version = "~> 2.0"
 
-  base_cidr_block = var.vpc_cidr
-  netmask_lengths = {
-    public  = 24
-    private = 24
-  }
-  availability_zones = [data.aws_availability_zones.available.names[0]]
+# Data source to fetch available AZs
+data "aws_availability_zones" "available" {
+  state = "available"
 }
 
+# Manually creating subnets without using an external module
 resource "aws_subnet" "public_subnet" {
   vpc_id            = aws_vpc.main.id
-  cidr_block        = module.subnets.cidr_blocks["public"][0]
+  cidr_block        = cidrsubnet(var.vpc_cidr, 4, 0)  # Example CIDR calculation
   availability_zone = data.aws_availability_zones.available.names[0]
 
   map_public_ip_on_launch = true
@@ -39,7 +34,7 @@ resource "aws_subnet" "public_subnet" {
 
 resource "aws_subnet" "private_subnet" {
   vpc_id            = aws_vpc.main.id
-  cidr_block        = module.subnets.cidr_blocks["private"][0]
+  cidr_block        = cidrsubnet(var.vpc_cidr, 4, 1)  # Example CIDR calculation
   availability_zone = data.aws_availability_zones.available.names[0]
 
   map_public_ip_on_launch = false
