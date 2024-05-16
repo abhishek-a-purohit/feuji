@@ -25,6 +25,18 @@ module "label_public_route" {
   name       = "route"
   attributes = ["public"]
 }
+module "labels_subnet_default" {
+  source  = "cloudposse/label/null"
+  version =  "0.25.0"
+ 
+  namespace       = "feuji"
+  stage           = "test"
+  name            = "subnetaz"
+  attributes      = ["availability-zone"]
+    tags            = {}
+  label_order     = ["name", "stage", "namespace", "attributes"]
+  
+}
 module "label_private_route" {
   source     = "cloudposse/label/null"
   namespace   = "feuji"
@@ -41,7 +53,7 @@ module "label_public_subnet" {
   stage       = "test"
   name        = "subnet"
   version    = "0.25.0"
-  attributes  = ["public", "us-west-1b"]
+  attributes  = ["public"]
 
   delimiter = "-"
   tags = {
@@ -55,7 +67,7 @@ module "label_private_subnet" {
   stage       = "test"
   name        = "subnet"
   version    = "0.25.0"
-  attributes  = ["p", "us-west-1b"]
+  attributes  = ["private"]
 
   delimiter = "-"
   tags = {
@@ -79,11 +91,13 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+
+
 # Manually creating subnets without using an external module
 resource "aws_subnet" "public_subnet" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = cidrsubnet(var.vpc_cidr, 4, 0)  # Example CIDR calculation
-  availability_zone = "us-west-1b"  # Explicitly setting the availability zone
+  availability_zone = data.aws_availability_zones.available.names[0]
   
 
   map_public_ip_on_launch = true
@@ -94,7 +108,6 @@ resource "aws_subnet" "private_subnet" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = cidrsubnet(var.vpc_cidr, 4, 1)  # Example CIDR calculation
   availability_zone = data.aws_availability_zones.available.names[0]
-
   map_public_ip_on_launch = false
   tags = module.label_private_subnet.tags
 }
